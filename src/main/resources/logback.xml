@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true" scan="true" scanPeriod="10 seconds"> <!-- scan per 10 seconds -->
+
+    <!-- load logback.properties file -->
+    <property resource="logback.properties"/>
+
+    <!-- branch processing according to value which is written in logback.properties -->
+    <if condition='property("run.mode").equals("real")'>
+        <then>
+            <property name="LOG_PATH" value="${log.path.real}"/>
+        </then>
+        <else>
+            <if condition='property("run.mode").equals("dev")'>
+                <then>
+                    <property name="LOG_PATH" value="${log.path.dev}"/>
+                </then>
+                <else>
+                    <property name="LOG_PATH" value="${log.path.local}"/>
+                </else>
+            </if>
+        </else>
+    </if>
+
+    <!-- configure appender layout and encoding -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%date{ISO8601,Asia/Seoul}] %-5p %c{10}\(%F:%M:%L\) [%X{id}]  %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        daily all log
+        store 30 days, delete the log afterwards
+        if the file is over 100MB, create new file with index and previous file is compressed into zip file
+    -->
+    <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/template-%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- configure log level under com.template package -->
+    <logger name="com.template">
+        <if condition='property("run.mode").equals("local")'>
+            <then>
+                <level value="debug" />
+            </then>
+            <else>
+                <level value="info" />
+            </else>
+        </if>
+    </logger>
+
+    <!-- configure root log level according to value which is written in logback.properties -->
+    <if condition='property("run.mode").equals("real")'>
+        <then>
+            <root level="info">
+                <appender-ref ref="ROLLING"/>
+                <appender-ref ref="STDOUT"/>
+            </root>
+        </then>
+        <else>
+            <if condition='property("run.mode").equals("dev")'>
+                <then>
+                    <root level="info">
+                        <appender-ref ref="ROLLING"/>
+                        <appender-ref ref="STDOUT" />
+                    </root>
+                </then>
+                <else>
+                    <root level="debug">
+                        <appender-ref ref="ROLLING"/>
+                        <appender-ref ref="STDOUT" />
+                    </root>
+                </else>
+            </if>
+        </else>
+    </if>
+
+</configuration>
