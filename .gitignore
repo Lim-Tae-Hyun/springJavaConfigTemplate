@@ -9,3 +9,5 @@
 .idea/compiler.xml
 .idea/encodings.xml
 .idea/libraries/Spring_Security_3_2_5.xml
+logs/
+target/
